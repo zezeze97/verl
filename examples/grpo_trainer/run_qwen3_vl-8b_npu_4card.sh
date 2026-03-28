@@ -21,7 +21,7 @@ HOME=/home/ma-user/work/preliminary_gui/z00967441
 
 RAY_DATA_HOME=${RAY_DATA_HOME:-"${HOME}/verl"}
 #MODEL_PATH=${MODEL_PATH:-"${RAY_DATA_HOME}/models/Qwen3-VL-8B-Instruct"}
-Model_PATH=/home/ma-user/work/preliminary_gui/z00967441/model_ckpts/UI-Voyager
+MODELs_PATH=/home/ma-user/work/preliminary_gui/z00967441/model_ckpts/UI-Voyager
 CKPTS_DIR=${CKPTS_DIR:-"${RAY_DATA_HOME}/ckpts/${project_name}/${exp_name}"}
 TRAIN_FILE=${TRAIN_FILE:-"${RAY_DATA_HOME}/data/geo3k/train.parquet"}
 TEST_FILE=${TEST_FILE:-"${RAY_DATA_HOME}/data/geo3k/test.parquet"}
