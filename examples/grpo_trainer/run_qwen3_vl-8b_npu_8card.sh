@@ -2,20 +2,21 @@
 set -xeuo pipefail
 
 project_name='GRPO-Qwen3_vl'
-exp_name='GRPO-Qwen3_vl-8B-npu-4card'
+exp_name='GRPO-Qwen3_vl-8B-npu-8card'
 
-# Single-node 4-card starter config for Qwen3-VL-8B on Ascend NPU.
+# Single-node 8-card starter config for Qwen3-VL-8B on Ascend NPU.
 export HCCL_CONNECT_TIMEOUT=${HCCL_CONNECT_TIMEOUT:-1500}
 export HCCL_HOST_SOCKET_PORT_RANGE=${HCCL_HOST_SOCKET_PORT_RANGE:-60000-60050}
 export HCCL_NPU_SOCKET_PORT_RANGE=${HCCL_NPU_SOCKET_PORT_RANGE:-61000-61050}
 export RAY_EXPERIMENTAL_NOSET_ASCEND_RT_VISIBLE_DEVICES=${RAY_EXPERIMENTAL_NOSET_ASCEND_RT_VISIBLE_DEVICES:-1}
-export ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VISIBLE_DEVICES:-0,1,2,3}
+export ASCEND_RT_VISIBLE_DEVICES=${ASCEND_RT_VISIBLE_DEVICES:-0,1,2,3,4,5,6,7}
 export WANDB_MODE=offline
 
 NNODES=${NNODES:-1}
-NPUS_PER_NODE=${NPUS_PER_NODE:-4}
+NPUS_PER_NODE=${NPUS_PER_NODE:-8}
 gen_tp=${GEN_TP:-1}
 sp_size=${SP_SIZE:-1}
+actor_fsdp_size=${ACTOR_FSDP_SIZE:-${NPUS_PER_NODE}}
 ENGINE=${1:-vllm}
 
 HOME=/home/ma-user/work/preliminary_gui/z00967441
@@ -26,6 +27,12 @@ MODEL_PATH=/home/ma-user/work/preliminary_gui/z00967441/model_ckpts/UI-Voyager
 CKPTS_DIR=${CKPTS_DIR:-"${RAY_DATA_HOME}/ckpts/${project_name}/${exp_name}"}
 TRAIN_FILE=${TRAIN_FILE:-"${RAY_DATA_HOME}/data/geo3k/train.parquet"}
 TEST_FILE=${TEST_FILE:-"${RAY_DATA_HOME}/data/geo3k/test.parquet"}
+
+max_prompt_length=${MAX_PROMPT_LENGTH:-1024}
+max_response_length=${MAX_RESPONSE_LENGTH:-1024}
+# Qwen3-VL advertises a very large native context window. Keep vLLM aligned with
+# the training lengths instead of reserving KV cache for the full 262144 tokens.
+max_model_len=${MAX_MODEL_LEN:-4096}
 
 # Rollout correction parameters
 rollout_is=${ROLLOUT_IS:-sequence}
@@ -39,8 +46,8 @@ python3 -m verl.trainer.main_ppo \
     data.train_files="${TRAIN_FILE}" \
     data.val_files="${TEST_FILE}" \
     data.train_batch_size=64 \
-    data.max_prompt_length=1024 \
-    data.max_response_length=1024 \
+    data.max_prompt_length=${max_prompt_length} \
+    data.max_response_length=${max_response_length} \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     data.image_key=images \
@@ -58,7 +65,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.kl_loss_coef=0.01 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
     actor_rollout_ref.actor.entropy_coeff=0 \
-    actor_rollout_ref.actor.fsdp_config.fsdp_size=4 \
+    actor_rollout_ref.actor.fsdp_config.fsdp_size=${actor_fsdp_size} \
     actor_rollout_ref.actor.fsdp_config.reshard_after_forward=True \
     actor_rollout_ref.actor.fsdp_config.entropy_checkpointing=True \
     actor_rollout_ref.actor.fsdp_config.param_offload=False \
@@ -76,13 +83,14 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.n=4 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=${gen_tp} \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=4 \
+    actor_rollout_ref.rollout.max_model_len=${max_model_len} \
     actor_rollout_ref.rollout.max_num_batched_tokens=8192 \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.55 \
     actor_rollout_ref.rollout.enable_chunked_prefill=True \
     actor_rollout_ref.rollout.enforce_eager=False \
     actor_rollout_ref.rollout.free_cache_engine=True \
     actor_rollout_ref.rollout.calculate_log_probs=True \
-    +actor_rollout_ref.rollout.engine_kwargs.vllm.max_model_len=8192 \
+    +actor_rollout_ref.rollout.engine_kwargs.vllm.disable_mm_preprocessor_cache=True \
     algorithm.use_kl_in_reward=False \
     algorithm.rollout_correction.rollout_is=${rollout_is} \
     algorithm.rollout_correction.rollout_is_threshold=${rollout_is_threshold} \
@@ -102,4 +110,3 @@ python3 -m verl.trainer.main_ppo \
     trainer.test_freq=5 \
     trainer.total_epochs=15 \
     "$@"
-# +actor_rollout_ref.rollout.engine_kwargs.vllm.disable_mm_preprocessor_cache=True \
