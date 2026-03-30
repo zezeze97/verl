@@ -41,6 +41,12 @@ rollout_is_batch_normalize=${ROLLOUT_IS_BATCH_NORMALIZE:-true}
 rollout_rs=${ROLLOUT_RS:-token_k1}
 rollout_rs_threshold=${ROLLOUT_RS_THRESHOLD:-0.6_1.6}
 
+extra_rollout_args=()
+# Older vLLM builds do not recognize --disable-mm-preprocessor-cache, so keep it opt-in.
+if [[ "${DISABLE_MM_PREPROCESSOR_CACHE:-0}" == "1" ]]; then
+    extra_rollout_args+=("+actor_rollout_ref.rollout.engine_kwargs.vllm.disable_mm_preprocessor_cache=True")
+fi
+
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files="${TRAIN_FILE}" \
@@ -90,7 +96,6 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.enforce_eager=False \
     actor_rollout_ref.rollout.free_cache_engine=True \
     actor_rollout_ref.rollout.calculate_log_probs=True \
-    +actor_rollout_ref.rollout.engine_kwargs.vllm.disable_mm_preprocessor_cache=True \
     algorithm.use_kl_in_reward=False \
     algorithm.rollout_correction.rollout_is=${rollout_is} \
     algorithm.rollout_correction.rollout_is_threshold=${rollout_is_threshold} \
@@ -109,4 +114,5 @@ python3 -m verl.trainer.main_ppo \
     trainer.save_freq=5 \
     trainer.test_freq=5 \
     trainer.total_epochs=15 \
+    "${extra_rollout_args[@]}" \
     "$@"
