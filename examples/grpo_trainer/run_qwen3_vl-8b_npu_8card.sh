@@ -27,12 +27,15 @@ MODEL_PATH=/home/ma-user/work/preliminary_gui/z00967441/model_ckpts/UI-Voyager
 CKPTS_DIR=${CKPTS_DIR:-"${RAY_DATA_HOME}/ckpts/${project_name}/${exp_name}"}
 TRAIN_FILE=${TRAIN_FILE:-"${RAY_DATA_HOME}/data/geo3k/train.parquet"}
 TEST_FILE=${TEST_FILE:-"${RAY_DATA_HOME}/data/geo3k/test.parquet"}
+export TENSORBOARD_DIR=${TENSORBOARD_DIR:-"${RAY_DATA_HOME}/tensorboard_dir/${project_name}/${exp_name}"}
 
 max_prompt_length=${MAX_PROMPT_LENGTH:-1024}
 max_response_length=${MAX_RESPONSE_LENGTH:-1024}
 # Qwen3-VL advertises a very large native context window. Keep vLLM aligned with
 # the training lengths instead of reserving KV cache for the full 262144 tokens.
 max_model_len=${MAX_MODEL_LEN:-4096}
+dataloader_num_workers=${DATALOADER_NUM_WORKERS:-2}
+filter_overlong_prompts_workers=${FILTER_OVERLONG_PROMPTS_WORKERS:-1}
 
 # Rollout correction parameters
 rollout_is=${ROLLOUT_IS:-sequence}
@@ -58,6 +61,8 @@ python3 -m verl.trainer.main_ppo \
     data.truncation='error' \
     data.image_key=images \
     data.shuffle=False \
+    data.dataloader_num_workers=${dataloader_num_workers} \
+    data.filter_overlong_prompts_workers=${filter_overlong_prompts_workers} \
     actor_rollout_ref.model.path="${MODEL_PATH}" \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.model.use_fused_kernels=True \
@@ -71,6 +76,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.kl_loss_coef=0.01 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
     actor_rollout_ref.actor.entropy_coeff=0 \
+    actor_rollout_ref.actor.checkpoint.save_contents="['model','hf_model','optimizer','extra']" \
     actor_rollout_ref.actor.fsdp_config.fsdp_size=${actor_fsdp_size} \
     actor_rollout_ref.actor.fsdp_config.reshard_after_forward=True \
     actor_rollout_ref.actor.fsdp_config.entropy_checkpointing=True \
@@ -103,7 +109,7 @@ python3 -m verl.trainer.main_ppo \
     algorithm.rollout_correction.rollout_rs=${rollout_rs} \
     algorithm.rollout_correction.rollout_rs_threshold=${rollout_rs_threshold} \
     trainer.critic_warmup=0 \
-    trainer.logger='["console","wandb"]' \
+    trainer.logger='["console","tensorboard"]' \
     trainer.project_name="${project_name}" \
     trainer.experiment_name="${exp_name}" \
     trainer.n_gpus_per_node=${NPUS_PER_NODE} \
