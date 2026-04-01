@@ -1,8 +1,8 @@
 #!/bin/bash
 set -xeuo pipefail
 
-project_name='GRPO-Qwen3_vl'
-exp_name='GRPO-Qwen3_vl-8B-npu-8card'
+project_name='GRPO-GroundCUA'
+exp_name='GRPO-Qwen3_vl-8B-GroundCUA-npu-8card'
 
 # Single-node 8-card starter config for Qwen3-VL-8B on Ascend NPU.
 export HCCL_CONNECT_TIMEOUT=${HCCL_CONNECT_TIMEOUT:-1500}
@@ -21,16 +21,17 @@ ENGINE=${1:-vllm}
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REWARD_FN_PATH=${REWARD_FN_PATH:-"${SCRIPT_DIR}/reward_fn_point_in_box.py"}
 
-HOME=/home/ma-user/work/preliminary_gui/z00967441
+WORK_ROOT=${WORK_ROOT:-/home/ma-user/work/preliminary_gui/z00967441}
 
-RAY_DATA_HOME=${RAY_DATA_HOME:-"${HOME}/verl"}
+RAY_DATA_HOME=${RAY_DATA_HOME:-"${WORK_ROOT}/verl"}
 #MODEL_PATH=${MODEL_PATH:-"${RAY_DATA_HOME}/models/Qwen3-VL-8B-Instruct"}
-#MODEL_PATH=/home/ma-user/work/preliminary_gui/z00967441/model_ckpts/UI-Voyager
-MODEL_PATH=/home/ma-user/work/preliminary_gui/z00967441/model_ckpts/Qwen3-VL-8B-Instruct
+#MODEL_PATH=${WORK_ROOT}/model_ckpts/UI-Voyager
+MODEL_PATH=${MODEL_PATH:-"${WORK_ROOT}/model_ckpts/Qwen3-VL-8B-Instruct"}
 
 CKPTS_DIR=${CKPTS_DIR:-"${RAY_DATA_HOME}/ckpts/${project_name}/${exp_name}"}
-TRAIN_FILE=${TRAIN_FILE:-"${RAY_DATA_HOME}/data/geo3k/train.parquet"}
-TEST_FILE=${TEST_FILE:-"${RAY_DATA_HOME}/data/geo3k/test.parquet"}
+DATA_ROOT=${DATA_ROOT:-"${RAY_DATA_HOME}/data/GroundCUA"}
+TRAIN_FILE=${TRAIN_FILE:-"${DATA_ROOT}/train.parquet"}
+TEST_FILE=${TEST_FILE:-"${DATA_ROOT}/valid.parquet"}
 export TENSORBOARD_DIR=${TENSORBOARD_DIR:-"${RAY_DATA_HOME}/tensorboard_dir/${project_name}/${exp_name}"}
 max_ckpt_to_keep=${MAX_CKPT_TO_KEEP:-1}
 
@@ -59,12 +60,14 @@ python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files="${TRAIN_FILE}" \
     data.val_files="${TEST_FILE}" \
+    data.prompt_key=prompt \
     data.train_batch_size=64 \
     data.max_prompt_length=${max_prompt_length} \
     data.max_response_length=${max_response_length} \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     data.image_key=images \
+    data.return_raw_chat=True \
     data.shuffle=False \
     data.dataloader_num_workers=${dataloader_num_workers} \
     data.filter_overlong_prompts_workers=${filter_overlong_prompts_workers} \
