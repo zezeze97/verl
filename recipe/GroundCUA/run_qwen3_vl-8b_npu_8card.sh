@@ -25,11 +25,14 @@ HOME=/home/ma-user/work/preliminary_gui/z00967441
 
 RAY_DATA_HOME=${RAY_DATA_HOME:-"${HOME}/verl"}
 #MODEL_PATH=${MODEL_PATH:-"${RAY_DATA_HOME}/models/Qwen3-VL-8B-Instruct"}
-MODEL_PATH=/home/ma-user/work/preliminary_gui/z00967441/model_ckpts/UI-Voyager
+#MODEL_PATH=/home/ma-user/work/preliminary_gui/z00967441/model_ckpts/UI-Voyager
+MODEL_PATH=/home/ma-user/work/preliminary_gui/z00967441/model_ckpts/Qwen3-VL-8B-Instruct
+
 CKPTS_DIR=${CKPTS_DIR:-"${RAY_DATA_HOME}/ckpts/${project_name}/${exp_name}"}
 TRAIN_FILE=${TRAIN_FILE:-"${RAY_DATA_HOME}/data/geo3k/train.parquet"}
 TEST_FILE=${TEST_FILE:-"${RAY_DATA_HOME}/data/geo3k/test.parquet"}
 export TENSORBOARD_DIR=${TENSORBOARD_DIR:-"${RAY_DATA_HOME}/tensorboard_dir/${project_name}/${exp_name}"}
+max_ckpt_to_keep=${MAX_CKPT_TO_KEEP:-1}
 
 max_prompt_length=${MAX_PROMPT_LENGTH:-1024}
 max_response_length=${MAX_RESPONSE_LENGTH:-1024}
@@ -120,6 +123,8 @@ python3 -m verl.trainer.main_ppo \
     trainer.nnodes=${NNODES} \
     trainer.default_local_dir="${CKPTS_DIR}" \
     trainer.resume_mode=auto \
+    trainer.max_actor_ckpt_to_keep=${max_ckpt_to_keep} \
+    trainer.max_critic_ckpt_to_keep=${max_ckpt_to_keep} \
     trainer.val_before_train=True \
     trainer.save_freq=5 \
     trainer.test_freq=5 \
