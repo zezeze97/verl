@@ -18,6 +18,8 @@ gen_tp=${GEN_TP:-1}
 sp_size=${SP_SIZE:-1}
 actor_fsdp_size=${ACTOR_FSDP_SIZE:-${NPUS_PER_NODE}}
 ENGINE=${1:-vllm}
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+REWARD_FN_PATH=${REWARD_FN_PATH:-"${SCRIPT_DIR}/reward_fn_point_in_box.py"}
 
 HOME=/home/ma-user/work/preliminary_gui/z00967441
 
@@ -108,6 +110,8 @@ python3 -m verl.trainer.main_ppo \
     algorithm.rollout_correction.rollout_is_batch_normalize=${rollout_is_batch_normalize} \
     algorithm.rollout_correction.rollout_rs=${rollout_rs} \
     algorithm.rollout_correction.rollout_rs_threshold=${rollout_rs_threshold} \
+    reward.custom_reward_function.path="${REWARD_FN_PATH}" \
+    reward.custom_reward_function.name=compute_score \
     trainer.critic_warmup=0 \
     trainer.logger='["console","tensorboard"]' \
     trainer.project_name="${project_name}" \
