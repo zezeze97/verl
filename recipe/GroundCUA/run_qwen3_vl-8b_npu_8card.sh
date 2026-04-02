@@ -26,20 +26,21 @@ WORK_ROOT=${WORK_ROOT:-/home/ma-user/work/preliminary_gui/z00967441}
 RAY_DATA_HOME=${RAY_DATA_HOME:-"${WORK_ROOT}/verl"}
 #MODEL_PATH=${MODEL_PATH:-"${RAY_DATA_HOME}/models/Qwen3-VL-8B-Instruct"}
 #MODEL_PATH=${WORK_ROOT}/model_ckpts/UI-Voyager
-MODEL_PATH=${MODEL_PATH:-"${WORK_ROOT}/model_ckpts/Qwen3-VL-8B-Instruct"}
+#MODEL_PATH=${MODEL_PATH:-"${WORK_ROOT}/model_ckpts/Qwen3-VL-8B-Instruct"}
+MODEL_PATH=/home/ma-user/work/preliminary_gui/checkpoints/z00967441/model_ckpts/Qwen3-VL-8B-Instruct
 
 CKPTS_DIR=${CKPTS_DIR:-"${RAY_DATA_HOME}/ckpts/${project_name}/${exp_name}"}
-DATA_ROOT=${DATA_ROOT:-"${RAY_DATA_HOME}/data/GroundCUA"}
+DATA_ROOT=${DATA_ROOT:-"${RAY_DATA_HOME}/data/groundcua"}
 TRAIN_FILE=${TRAIN_FILE:-"${DATA_ROOT}/train.parquet"}
 TEST_FILE=${TEST_FILE:-"${DATA_ROOT}/valid.parquet"}
 export TENSORBOARD_DIR=${TENSORBOARD_DIR:-"${RAY_DATA_HOME}/tensorboard_dir/${project_name}/${exp_name}"}
 max_ckpt_to_keep=${MAX_CKPT_TO_KEEP:-1}
 
-max_prompt_length=${MAX_PROMPT_LENGTH:-1024}
-max_response_length=${MAX_RESPONSE_LENGTH:-1024}
+max_prompt_length=${MAX_PROMPT_LENGTH:-8064}
+max_response_length=${MAX_RESPONSE_LENGTH:-128}
 # Qwen3-VL advertises a very large native context window. Keep vLLM aligned with
 # the training lengths instead of reserving KV cache for the full 262144 tokens.
-max_model_len=${MAX_MODEL_LEN:-4096}
+max_model_len=${MAX_MODEL_LEN:-8192}
 dataloader_num_workers=${DATALOADER_NUM_WORKERS:-2}
 filter_overlong_prompts_workers=${FILTER_OVERLONG_PROMPTS_WORKERS:-1}
 
